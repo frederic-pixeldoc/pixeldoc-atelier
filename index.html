@@ -1,12 +1,18 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PixelDoc — Atelier v4</title>
+<meta name="description" content="PixelDoc Atelier : gestion des réparations, du stock de pièces, des devis et des documents légaux de l'atelier informatique PixelDoc.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0f1117">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f1117'/%3E%3Ctext x='16' y='23' font-size='20' font-weight='800' text-anchor='middle' fill='%236ee7b7' font-family='sans-serif'%3EP%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 /* ===== ROOT ===== */
 :root {
@@ -507,12 +513,35 @@ select option{background:var(--surface2);}
   .tarif-card,.legal-viewer{break-inside:avoid;border-color:#ccc;background:#fff;color:#000;}
   .tarif-table th,.tarif-table td{color:#000;border-color:#999;}
 }
+
+/* ===== ACCESSIBILITÉ & RESPONSIVE (audit) ===== */
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.nav-item:focus-visible,.key:focus-visible,.lock-link:focus-visible{outline-offset:-2px;}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important;}}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+img{max-width:100%;}
+@media(max-width:768px){
+  .viab-row{flex-wrap:wrap;}
+  .viab-row .fg{flex:1 1 140px;min-width:0;}
+  .quote-line{flex-wrap:wrap;}
+  .quote-line .qt{flex:1 1 100%;}
+  .legal-viewer{padding:14px;overflow-wrap:anywhere;}
+  .main,.page{min-width:0;max-width:100vw;}
+  .tarif-card,.viab-card{min-width:0;}
+  .tarif-table{min-width:520px;}
+  .toast{max-width:calc(100vw - 32px);}
+  input,select,textarea{font-size:16px;}
+}
+@media(max-width:400px){
+  .lock-wrap{padding:28px 20px;}
+  .modal-body{padding:12px;}
+}
 </style>
 </head>
 <body>
 
 <!-- ===== PD-NAVBAR ===== -->
-<nav class="pd-navbar">
+<nav class="pd-navbar" aria-label="Sites PixelDoc">
   <div class="pd-navbar-inner">
     <a href="https://frederic-pixeldoc.github.io/pixeldoc-974/" class="pd-nav-link" target="_blank" rel="noopener">🏠 <span>Vitrine</span></a>
     <a href="https://frederic-pixeldoc.github.io/pixeldoc-atelier/" class="pd-nav-link pd-nav-active" target="_blank" rel="noopener">🔧 <span>Atelier</span></a>
@@ -563,13 +592,13 @@ select option{background:var(--surface2);}
 <div class="app">
 
 <!-- HAMBURGER -->
-<button class="hamburger" onclick="toggleSB()">☰</button>
+<button class="hamburger" onclick="toggleSB()" aria-label="Ouvrir le menu">☰</button>
 <div class="sidebar-overlay" id="sbOverlay" onclick="closeSB()"></div>
 
 <!-- ===== SIDEBAR ===== -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-logo">Pixel<span>Doc</span><small>Atelier v4</small></div>
-  <nav class="nav">
+  <nav class="nav" aria-label="Navigation principale">
     <div class="nav-group-label">Principal</div>
     <div class="nav-item active" onclick="showPage('dashboard',this)"><span class="nav-icon">📊</span>Tableau de bord</div>
     <div class="nav-item" onclick="showPage('repairs',this)">
@@ -602,7 +631,7 @@ select option{background:var(--surface2);}
 </aside>
 
 <!-- ===== MAIN ===== -->
-<main class="main">
+<main class="main" id="main">
 
   <!-- ======= DASHBOARD ======= -->
   <div class="page active" id="page-dashboard">
@@ -635,7 +664,7 @@ select option{background:var(--surface2);}
     </div>
     <div class="search-wrap">
       <span class="search-ico">🔍</span>
-      <input class="search-in" type="text" placeholder="Rechercher client, appareil, problème..." oninput="onSearch(this.value)">
+      <input class="search-in" type="search" aria-label="Rechercher" placeholder="Rechercher client, appareil, problème..." oninput="onSearch(this.value)">
     </div>
     <div class="filters">
       <div class="pill on" onclick="setFilter('all',this)">Toutes</div>
@@ -700,15 +729,15 @@ select option{background:var(--surface2);}
     <p style="color:var(--dim);font-size:13px;margin-bottom:16px">Tarifs HT — TVA non applicable, art. 293 B du CGI. Pièces facturées séparément.</p>
     <div class="tarif-card">
       <h3>Diagnostic & dépannage</h3>
-      <table class="tarif-table"><thead><tr><th>Code</th><th>Prestation</th><th>Durée</th><th class="num">HT</th><th>Note</th></tr></thead><tbody id="tbl-diag"></tbody></table>
+      <div class="tbl-wrap"><table class="tarif-table"><thead><tr><th>Code</th><th>Prestation</th><th>Durée</th><th class="num">HT</th><th>Note</th></tr></thead><tbody id="tbl-diag"></tbody></table></div>
     </div>
     <div class="tarif-card">
       <h3>Réparation & pose composants (atelier)</h3>
-      <table class="tarif-table"><thead><tr><th>Code</th><th>Prestation</th><th>Durée</th><th class="num">MO HT</th><th>Pièce indic.</th></tr></thead><tbody id="tbl-rep"></tbody></table>
+      <div class="tbl-wrap"><table class="tarif-table"><thead><tr><th>Code</th><th>Prestation</th><th>Durée</th><th class="num">MO HT</th><th>Pièce indic.</th></tr></thead><tbody id="tbl-rep"></tbody></table></div>
     </div>
     <div class="tarif-card">
       <h3>Forfaits & maintenance</h3>
-      <table class="tarif-table"><thead><tr><th>Code</th><th>Forfait</th><th>Inclut</th><th class="num">HT</th><th>Période</th></tr></thead><tbody id="tbl-forf"></tbody></table>
+      <div class="tbl-wrap"><table class="tarif-table"><thead><tr><th>Code</th><th>Forfait</th><th>Inclut</th><th class="num">HT</th><th>Période</th></tr></thead><tbody id="tbl-forf"></tbody></table></div>
     </div>
   </div>
 
@@ -798,7 +827,7 @@ select option{background:var(--surface2);}
     </div>
     <div class="tarif-card">
       <h3>4. Scénarios CA → reste à vivre</h3>
-      <table class="tarif-table"><thead><tr><th>CA HT</th><th class="num">URSSAF</th><th class="num">IR</th><th class="num">Coûts fixes</th><th class="num">Reste à vivre</th><th class="num">% CA</th></tr></thead><tbody id="tbl-scn"></tbody></table>
+      <div class="tbl-wrap"><table class="tarif-table"><thead><tr><th>CA HT</th><th class="num">URSSAF</th><th class="num">IR</th><th class="num">Coûts fixes</th><th class="num">Reste à vivre</th><th class="num">% CA</th></tr></thead><tbody id="tbl-scn"></tbody></table></div>
     </div>
   </div>
 
@@ -829,7 +858,7 @@ select option{background:var(--surface2);}
     </div>
     <div class="tarif-card">
       <h3>Catalogue actuel</h3>
-      <table class="tarif-table recon-table"><thead><tr><th>Réf.</th><th>Gamme</th><th>Specs</th><th class="num">Achat</th><th class="num">Prép.</th><th class="num">Vente</th><th class="num">Marge €</th><th class="num">Marge %</th><th></th></tr></thead><tbody id="tbl-rc"></tbody><tfoot id="tf-rc"></tfoot></table>
+      <div class="tbl-wrap"><table class="tarif-table recon-table"><thead><tr><th>Réf.</th><th>Gamme</th><th>Specs</th><th class="num">Achat</th><th class="num">Prép.</th><th class="num">Vente</th><th class="num">Marge €</th><th class="num">Marge %</th><th></th></tr></thead><tbody id="tbl-rc"></tbody><tfoot id="tf-rc"></tfoot></table></div>
     </div>
   </div>
 
@@ -893,7 +922,7 @@ select option{background:var(--surface2);}
   <div class="modal">
     <div class="modal-head">
       <div class="modal-title" id="addTitle">Nouveau client</div>
-      <button class="modal-x" onclick="closeM('addModal')">✕</button>
+      <button class="modal-x" onclick="closeM('addModal')" aria-label="Fermer">✕</button>
     </div>
     <div class="modal-body">
       <div class="fgrid">
@@ -956,7 +985,7 @@ select option{background:var(--surface2);}
   <div class="modal wide">
     <div class="modal-head">
       <div class="modal-title" id="detTitle">Détail</div>
-      <button class="modal-x" onclick="closeM('detModal')">✕</button>
+      <button class="modal-x" onclick="closeM('detModal')" aria-label="Fermer">✕</button>
     </div>
     <div class="modal-body" id="detBody"></div>
   </div>
@@ -967,7 +996,7 @@ select option{background:var(--surface2);}
   <div class="modal" style="max-width:440px">
     <div class="modal-head">
       <div class="modal-title" id="stockTitle">Nouvelle pièce</div>
-      <button class="modal-x" onclick="closeM('stockModal')">✕</button>
+      <button class="modal-x" onclick="closeM('stockModal')" aria-label="Fermer">✕</button>
     </div>
     <div class="modal-body">
       <div class="fg"><label>Nom de la pièce</label><input id="sNom" type="text" placeholder="ex: SSD 2.5 SATA 240Go"></div>
@@ -999,7 +1028,7 @@ select option{background:var(--surface2);}
   <div class="modal" style="max-width:400px">
     <div class="modal-head">
       <div class="modal-title">Ajouter une pièce libre</div>
-      <button class="modal-x" onclick="closeM('partLibreModal')">✕</button>
+      <button class="modal-x" onclick="closeM('partLibreModal')" aria-label="Fermer">✕</button>
     </div>
     <div class="modal-body">
       <div class="fg">
@@ -1022,8 +1051,8 @@ select option{background:var(--surface2);}
 
 <!-- LIGHTBOX -->
 <div class="lightbox" id="lb" onclick="closeLB()">
-  <button class="lb-close" onclick="closeLB()">✕</button>
-  <img id="lbImg" src="" alt="">
+  <button class="lb-close" onclick="closeLB()" aria-label="Fermer l'image">✕</button>
+  <img id="lbImg" src="" alt="Photo de l'appareil en grand">
 </div>
 
 <!-- TOAST -->
@@ -1318,14 +1347,14 @@ function renderGrid(id, list) {
     const py = r.payment||'pending';
     const ph = (r.photos||[]).length;
     const photoHtml = ph>0 ? `<div class="photos-row">
-      ${r.photos.slice(0,3).map(p=>`<img class="photo-mini" src="${p}" onclick="openLB(event,'${p}')" alt="">`).join('')}
+      ${r.photos.slice(0,3).map(p=>`<img class="photo-mini" src="${p}" onclick="openLB(event,'${p}')" alt="Photo de l'appareil">`).join('')}
       ${ph>3?`<div class="more-photos">+${ph-3}</div>`:''}
     </div>` : '';
     return `
     <div class="rcard" onclick="openDet('${r.id}')">
       <div class="rcard-top">
         <div class="rcard-device">
-          <div class="thumb">${r.photos&&r.photos[0]?`<img src="${r.photos[0]}" alt="">`:' 💻'}</div>
+          <div class="thumb">${r.photos&&r.photos[0]?`<img src="${r.photos[0]}" alt="Photo de l'appareil" loading="lazy">`:' 💻'}</div>
           <div>
             <div class="dev-name">${r.appareil||'Appareil inconnu'}</div>
             <div class="dev-client">${r.prenom} ${r.nom}</div>
@@ -1351,7 +1380,7 @@ function renderGrid(id, list) {
             <option value="urgent" ${r.status==='urgent'?'selected':''}>🚨</option>
             <option value="done" ${r.status==='done'?'selected':''}>✅</option>
           </select>
-          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();delRepair('${r.id}')">🗑️</button>
+          <button class="btn btn-danger btn-sm" aria-label="Supprimer la réparation" onclick="event.stopPropagation();delRepair('${r.id}')">🗑️</button>
         </div>
       </div>
     </div>`;
@@ -1447,17 +1476,17 @@ function renderStock() {
           <div class="scard-cat">${s.cat}</div>
         </div>
         <div class="scard-acts">
-          <button class="qbtn" onclick="openStockEdit('${s.id}')" title="Modifier">✏️</button>
-          <button class="qbtn" onclick="delStock('${s.id}')" style="color:var(--accent3)" title="Supprimer">🗑️</button>
+          <button class="qbtn" onclick="openStockEdit('${s.id}')" title="Modifier" aria-label="Modifier">✏️</button>
+          <button class="qbtn" aria-label="Supprimer" onclick="delStock('${s.id}')" style="color:var(--accent3)" title="Supprimer">🗑️</button>
         </div>
       </div>
       <div class="scard-qty ${qcls}">${s.qty} <span style="font-size:13px;font-weight:400;color:var(--dim)">en stock</span></div>
       ${s.qty<=s.min?'<div class="scard-alert">⚠️ Stock bas — commander !</div>':''}
       <div class="scard-bar"><div class="scard-fill" style="width:${pct}%;background:${bcol}"></div></div>
       <div class="qty-ctrl">
-        <button class="qbtn" onclick="adjQty('${s.id}',-1)">−</button>
+        <button class="qbtn" aria-label="Retirer une unité" onclick="adjQty('${s.id}',-1)">−</button>
         <span class="qty-display">${s.qty}</span>
-        <button class="qbtn" onclick="adjQty('${s.id}',+1)">+</button>
+        <button class="qbtn" aria-label="Ajouter une unité" onclick="adjQty('${s.id}',+1)">+</button>
       </div>
       ${s.pa||s.pv?`<div class="scard-prices">Achat: ${s.pa||0}€ · Vente: ${s.pv||0}€</div>`:''}
       ${s.ref?`<div class="scard-ref">Réf: ${s.ref}</div>`:''}
@@ -1638,7 +1667,7 @@ function openDet(id) {
       <div class="det-sec-title">Photos (${(r.photos||[]).length})</div>
       <div class="det-photos">
         ${(r.photos||[]).length>0
-          ? r.photos.map(p=>`<div class="det-photo" onclick="openLB(event,'${p}')"><img src="${p}" alt=""></div>`).join('')
+          ? r.photos.map(p=>`<div class="det-photo" onclick="openLB(event,'${p}')"><img src="${p}" alt="Photo de l'appareil" loading="lazy"></div>`).join('')
           : '<div class="det-photo">📷</div><div style="grid-column:2/-1;display:flex;align-items:center;font-size:12px;color:var(--dim)">Aucune photo</div>'
         }
       </div>
@@ -1709,7 +1738,7 @@ function onDragOver(e){e.preventDefault();document.getElementById('dropZone').cl
 function onDragLeave(){document.getElementById('dropZone').classList.remove('drag');}
 function onDrop(e){e.preventDefault();document.getElementById('dropZone').classList.remove('drag');addFiles(e.dataTransfer.files);}
 function renderPrev(){
-  document.getElementById('prevGrid').innerHTML=photos.map((p,i)=>`<div class="prev-item"><img src="${p}" alt=""><button class="prev-rm" onclick="rmPhoto(${i})">✕</button></div>`).join('');
+  document.getElementById('prevGrid').innerHTML=photos.map((p,i)=>`<div class="prev-item"><img src="${p}" alt="Aperçu de la photo ajoutée"><button class="prev-rm" aria-label="Retirer la photo" onclick="rmPhoto(${i})">✕</button></div>`).join('');
 }
 function rmPhoto(i){photos.splice(i,1);renderPrev();}
 
@@ -2647,7 +2676,24 @@ function recalcAddTotal(){
 /* ==================== START ==================== */
 
 
-boot();
+
+/* ==================== ACCESSIBILITÉ ==================== */
+function a11yEnhance(root){
+  (root||document).querySelectorAll('.nav-item,.key,.lock-link').forEach(el=>{
+    if(el.dataset.a11y) return; el.dataset.a11y='1';
+    el.setAttribute('role','button'); el.tabIndex=0;
+    el.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); el.click(); } });
+  });
+  (root||document).querySelectorAll('.fg > label:not([for])').forEach(l=>{
+    const f=l.parentElement.querySelector('input[id],select[id],textarea[id]');
+    if(f) l.setAttribute('for',f.id);
+  });
+  document.querySelectorAll('.modal-overlay,.modal-bg,.modal').forEach(m=>{ if(m.classList.contains('modal')){m.setAttribute('role','dialog');m.setAttribute('aria-modal','true');} });
+}
+document.addEventListener('DOMContentLoaded',()=>a11yEnhance());
+
+// Les scripts différés (Chart.js, jsPDF) sont chargés avant DOMContentLoaded
+document.addEventListener('DOMContentLoaded', boot);
 </script>
 </body>
 </html>
