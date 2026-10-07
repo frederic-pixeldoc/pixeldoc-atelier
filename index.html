@@ -901,6 +901,7 @@ img{max-width:100%;}
     <div class="legal-doc-card"><div><div class="ldt">🛡️ Conditions de garantie</div><div class="ldd">Garantie légale 2 ans + commerciale 6 mois recond. + exclusions</div></div><button class="btn btn-blue" onclick="openLegal('garantie')">Aperçu / Imprimer</button></div>
     <div class="legal-doc-card"><div><div class="ldt">🔒 Politique de confidentialité (RGPD)</div><div class="ldd">Traitement des données clients, droits, durées de conservation</div></div><button class="btn btn-blue" onclick="openLegal('rgpd')">Aperçu / Imprimer</button></div>
     <div class="legal-doc-card"><div><div class="ldt">📌 Affichage atelier obligatoire</div><div class="ldd">Tarifs principaux, médiateur, mentions — à afficher visiblement</div></div><button class="btn btn-blue" onclick="openLegal('affichage')">Aperçu / Imprimer</button></div>
+    <div class="legal-doc-card"><div><div class="ldt">🧾 Fiche de réception (vierge)</div><div class="ldd">À imprimer et remplir à la main au dépôt de l'appareil : état, accessoires, sauvegarde, accord sur le devis</div></div><button class="btn btn-blue" onclick="printBon(null)">Imprimer</button></div>
     <div id="legal-viewer" class="legal-viewer" style="display:none">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px" class="no-print">
         <h2 id="lv-title" style="margin:0">—</h2>
@@ -925,6 +926,7 @@ img{max-width:100%;}
       <div class="viab-row"><div class="fg"><label>SIREN (9 chiffres)</label><input id="pf_siren" type="text"></div><div class="fg"><label>SIRET (14 chiffres)</label><input id="pf_siret" type="text"></div></div>
       <div class="viab-row"><div class="fg"><label>Immatriculation RNE</label><input id="pf_rne" type="text"></div><div class="fg"><label>RM (si CMA)</label><input id="pf_rm" type="text"></div></div>
       <div class="fg"><label>Médiateur conso désigné</label><input id="pf_med" type="text" placeholder="Nom + adresse + site web"></div>
+      <div class="fg"><label>Site web (affiché sur les documents)</label><input id="pf_site" type="text" placeholder="https://… (laisser vide tant que tu n'as pas de domaine)"></div>
     </div>
     <div class="viab-note">⚠️ <strong>Obligations légales :</strong> SIRET sur facture (art. L441-9 C. com.), médiateur conso désigné (art. L612-1 depuis 2016), mention TVA non applicable art. 293 B du CGI déjà incluse, garantie légale 2 ans (art. L217-3 C. conso) ajoutée automatiquement à la facture.</div>
     <!-- ===== SAUVEGARDE / RESTAURATION ===== -->
@@ -1782,7 +1784,7 @@ function openDet(id) {
     ${r.notes?`<div class="det-sec"><div class="det-sec-title">Notes internes 🔒</div><p style="font-size:13px;color:var(--accent2);line-height:1.6;background:rgba(245,158,11,0.08);padding:10px 12px;border-radius:8px;border:1px solid rgba(245,158,11,0.15)">${r.notes}</p></div>`:''}
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
       <button class="btn btn-ghost" style="flex:1" onclick="openEdit('${r.id}');closeM('detModal')">✏️ Modifier</button>
-      <button class="btn btn-purple" onclick="printBon('${r.id}')">🖨️ Bon de réparation</button>
+      <button class="btn btn-purple" onclick="printBon('${r.id}')">🖨️ Fiche de réception</button>
       ${isDone?`<button class="btn btn-blue" onclick="genInvoice('${r.id}')">🧾 Facture PDF</button>`:''}
       <button class="btn btn-danger btn-sm" onclick="delRepair('${r.id}');closeM('detModal')">🗑️</button>
     </div>
@@ -1846,78 +1848,112 @@ function toast(msg){
 
 /* ==================== PRINT BON DE RÉPARATION ==================== */
 function printBon(id) {
-  const r = repairs.find(r=>r.id===id);
-  if (!r) return;
-  const num = `BR-${new Date().getFullYear()}-${String(id).slice(-4).toUpperCase()}`;
-  const dateStr = new Date().toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  // id = null : fiche de réception vierge, à remplir à la main
+  const r = id ? repairs.find(r => r.id === id) : null;
+  if (id && !r) return;
+  const P = getProfil(), pv = k => escH((P[k] || '').trim());
+  const num = r ? docNo(r, 'bon', 'BR') : '';
+  const dateStr = new Date().toLocaleDateString('fr-FR', {day:'numeric', month:'long', year:'numeric'});
+  const blank = (w = '100%') => `<span class="ln" style="min-width:${w}">&nbsp;</span>`;
+  const val = (v, w) => v ? `<strong>${escH(v)}</strong>` : blank(w);
   const css = `
-    body{font-family:Arial,sans-serif;color:#111;margin:0;padding:20mm;font-size:11pt;}
-    h1{margin:0;font-size:22pt;letter-spacing:-1px;}
-    h1 span{color:#10b981;}
-    .tagline{font-size:8pt;color:#666;letter-spacing:3px;text-transform:uppercase;margin-top:3px;}
-    .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:18px;}
-    .head-right{text-align:right;}
-    .head-right h2{font-size:18pt;text-transform:uppercase;letter-spacing:1px;margin:0;}
-    .head-right p{font-size:9pt;color:#666;margin:3px 0 0;}
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
-    .box{border:1px solid #ddd;border-radius:6px;padding:12px;}
-    .box-label{font-size:7pt;font-weight:700;color:#888;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;}
-    .box h3{font-size:14pt;margin:0 0 4px;}
-    .box p{font-size:9pt;color:#555;margin:2px 0;}
-    .prob{border:1px solid #ddd;border-radius:6px;padding:12px;margin-bottom:14px;}
-    .prob-content{font-size:10pt;color:#333;line-height:1.6;min-height:55px;}
-    .devis-val{font-size:20pt;font-weight:900;color:#10b981;}
-    .checklist{margin:0;padding:0;}
-    .checklist li{list-style:none;padding:6px 0;border-bottom:1px dashed #eee;font-size:9pt;color:#666;display:flex;align-items:center;gap:8px;}
-    .checklist li:last-child{border-bottom:none;}
-    .sig{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:6px;}
-    .sig-box{flex:1;border:1px solid #ddd;border-radius:6px;padding:12px;}
-    .sig-box p{font-size:7pt;color:#888;letter-spacing:2px;text-transform:uppercase;margin-bottom:40px;}
-    .sig-line{border-top:1px solid #ddd;font-size:8pt;color:#aaa;padding-top:5px;}
-    .mentions{background:#f8f8f8;border-radius:6px;padding:10px;font-size:7pt;color:#777;line-height:1.6;margin-top:14px;}
-  `;
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${css}</style></head><body>
+    @page{size:A4;margin:12mm}
+    *{box-sizing:border-box}
+    body{font-family:Arial,sans-serif;color:#111;margin:0;font-size:9.5pt;line-height:1.35}
+    h1{margin:0;font-size:20pt;letter-spacing:-1px} h1 span{color:#10b981}
+    .tag{font-size:7pt;color:#666;letter-spacing:2.5px;text-transform:uppercase;margin-top:2px}
+    .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:10px}
+    .head-r{text-align:right} .head-r h2{font-size:15pt;text-transform:uppercase;margin:0} .head-r p{font-size:8.5pt;color:#555;margin:2px 0 0}
+    .co{font-size:7.5pt;color:#555;margin-top:5px}
+    .g2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+    .box{border:1px solid #ccc;border-radius:5px;padding:7px 9px;margin-bottom:8px;break-inside:avoid}
+    .g2 .box{margin-bottom:0}
+    .lb{font-size:6.5pt;font-weight:700;color:#777;letter-spacing:1.8px;text-transform:uppercase;margin-bottom:4px}
+    .ln{display:inline-block;border-bottom:1px solid #999;height:13px;vertical-align:bottom}
+    .row{margin:3px 0} .cb{display:inline-block;margin-right:12px;white-space:nowrap}
+    .big{font-size:15pt;font-weight:900;color:#0b8f67}
+    .sig{display:flex;gap:10px;margin-top:8px}
+    .sig .box{flex:1;height:62px}
+    .small{font-size:7pt;color:#666;line-height:1.5;margin-top:6px}
+    .fine{background:#f6f6f6;border-radius:5px;padding:6px 9px;font-size:7pt;color:#555;line-height:1.5;margin-top:8px}`;
+  const cb = t => `<span class="cb">☐ ${t}</span>`;
+  const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Fiche de réception ${escH(num)}</title><style>${css}</style></head><body>
     <div class="head">
-      <div><h1>Pixel<span>Doc</span></h1><div class="tagline">Réparation · Tutoriels · Reconditionnés</div><p style="font-size:8pt;color:#888;margin-top:6px">pixeldoc.fr</p></div>
-      <div class="head-right"><h2>Bon de réparation</h2><p>N° ${num}</p><p>Date : ${dateStr}</p></div>
+      <div><h1>Pixel<span>Doc</span></h1><div class="tag">Réparation · Maintenance · Reconditionnés</div>
+        <div class="co">${pv('pf_nom') || 'PixelDoc'}${pv('pf_tel') ? ' · ' + pv('pf_tel') : ''}${pv('pf_mail') ? ' · ' + pv('pf_mail') : ''}${pv('pf_siret') ? '<br>SIRET ' + pv('pf_siret') : ''}${pv('pf_site') ? ' · ' + pv('pf_site') : ''}</div></div>
+      <div class="head-r"><h2>Fiche de réception</h2><p>N° ${num ? escH(num) : blank('90px')}</p><p>Date du dépôt : ${r ? new Date(r.date).toLocaleDateString('fr-FR') : blank('90px')}</p></div>
     </div>
-    <div class="grid2">
-      <div class="box"><div class="box-label">Client</div><h3>${r.prenom} ${r.nom}</h3>${r.tel?`<p>📞 ${r.tel}</p>`:''} ${r.email?`<p>✉ ${r.email}</p>`:''}</div>
-      <div class="box"><div class="box-label">Appareil</div><h3>${r.appareil||'—'}</h3><p>Date d'entrée : ${new Date(r.date).toLocaleDateString('fr-FR')}</p></div>
+    <div class="g2">
+      <div class="box"><div class="lb">Client</div>
+        <div class="row">Nom : ${r ? '<strong>' + escH((r.prenom || '') + ' ' + (r.nom || '')) + '</strong>' : blank('210px')}</div>
+        <div class="row">Tél : ${val(r && r.tel, '120px')}</div>
+        <div class="row">E-mail : ${val(r && r.email, '190px')}</div></div>
+      <div class="box"><div class="lb">Appareil</div>
+        <div class="row">Marque / modèle : ${val(r && r.appareil, '150px')}</div>
+        <div class="row">N° de série : ${blank('150px')}</div>
+        <div class="row">Restitution prévue : ${r && r.restitution ? '<strong>' + new Date(r.restitution).toLocaleDateString('fr-FR') + '</strong>' : blank('100px')}</div></div>
     </div>
-    <div class="prob"><div class="box-label">Problème décrit par le client</div><div class="prob-content">${r.probleme||'—'}</div></div>
-    <div class="grid2">
-      <div class="box"><div class="box-label">Devis estimé</div><div class="devis-val">${r.prix?r.prix+' €':'À définir'}</div>${r.acompte&&+r.acompte>0?`<p style="font-size:9pt;color:#666;margin-top:4px">Acompte : ${r.acompte} €</p>`:''}</div>
-      <div class="box"><div class="box-label">Travaux à réaliser</div>
-        <ul class="checklist">
-          <li>☐ Diagnostic</li><li>☐ Nettoyage / dépoussiérage</li>
-          <li>☐ Remplacement pièce(s)</li><li>☐ Réinstallation système</li><li>☐ Tests finaux</li>
-        </ul>
-      </div>
+    <div class="box"><div class="lb">Panne décrite par le client</div>${r && r.probleme ? escH(r.probleme).replace(/\n/g,'<br>') : blank() + '<br>' + blank()}</div>
+    <div class="box"><div class="lb">État de l'appareil à la réception</div>
+      <div class="row">${cb('Rayures / éraflures')}${cb('Coque ou écran fissuré')}${cb('Touches manquantes')}${cb('Traces de choc ou de liquide')}${cb('Vis / scellés manquants')}</div>
+      <div class="row">L'appareil s'allume : ${cb('oui')}${cb('non')} &nbsp; Observations : ${blank('55%')}</div></div>
+    <div class="g2">
+      <div class="box"><div class="lb">Accessoires remis</div>
+        <div class="row">${cb('Chargeur')}${cb('Batterie')}${cb('Sac')}</div><div class="row">${cb('Souris')}${cb('Câble(s)')}${cb('Autre :')} ${blank('60px')}</div></div>
+      <div class="box"><div class="lb">Accès à l'appareil</div>
+        <div class="row">Mot de passe / code : ${blank('110px')}</div>
+        <div class="small" style="margin-top:3px">À ne noter que si nécessaire à l'intervention ; il ne sera utilisé que pour la réparation.</div></div>
+    </div>
+    <div class="box"><div class="lb">Données du client</div>
+      <div class="row">${cb('J\'ai effectué une sauvegarde de mes données')}</div>
+      <div class="row">${cb('Je n\'ai pas de sauvegarde : je comprends qu\'une intervention peut entraîner une perte de données dont l\'atelier ne peut être tenu responsable')}</div></div>
+    <div class="g2">
+      <div class="box"><div class="lb">Devis estimé</div>
+        <div class="big">${r && r.prix ? pdfEUR(r.prix) : 'À définir'}</div>
+        <div class="row" style="font-size:8pt">${r && +r.acompte > 0 ? 'Acompte versé : <strong>' + pdfEUR(r.acompte) + '</strong>' : 'Acompte versé : ' + blank('60px') + ' €'}</div></div>
+      <div class="box"><div class="lb">Accord sur les travaux</div>
+        <div class="row" style="font-size:8.5pt">J'autorise les travaux jusqu'à ${blank('50px')} € sans nouvel accord. Au-delà, un nouveau devis me sera soumis.</div></div>
     </div>
     <div class="sig">
-      <div class="sig-box"><p>Signature client</p><div class="sig-line">Bon pour accord — dépôt appareil</div></div>
-      <div class="sig-box"><p>Signature technicien</p><div class="sig-line">PixelDoc — Frédéric</div></div>
+      <div class="box"><div class="lb">Signature du client — « lu et approuvé »</div></div>
+      <div class="box"><div class="lb">Pour PixelDoc</div><div class="small">${pv('pf_nom') || 'Frédéric Bartholo'}<br>Le ${dateStr}</div></div>
     </div>
-    <div class="mentions"><strong>Conditions :</strong> Micro-entreprise · TVA non applicable art. 293B CGI · Garantie main d'œuvre 3 mois · Appareils non récupérés sous 3 mois pourront être cédés · PixelDoc ne saurait être tenu responsable de la perte de données préexistantes.</div>
+    <div class="fine"><strong>Conditions.</strong> Micro-entreprise, TVA non applicable, art. 293 B du CGI. Garantie main d'œuvre 3 mois sur la panne traitée ; garanties légales inchangées. L'atelier informera le client de la fin des travaux : l'appareil est à retirer sans délai. À défaut de retrait après mise en demeure, l'atelier pourra appliquer les dispositions légales relatives aux objets abandonnés.
+      <br><strong>Données personnelles.</strong> Les informations de cette fiche servent uniquement à la réparation, à la facturation et au suivi de garantie ; elles sont conservées 3 ans après la dernière intervention (10 ans pour les pièces comptables). Droit d'accès, de rectification et d'effacement : ${pv('pf_mail') || 'voir mentions légales'}.</div>
   </body></html>`;
 
-  const w = window.open('','_blank','width=800,height=900');
+  const w = window.open('', '_blank', 'width=800,height=1000');
   if (w) {
-    w.document.write(html);
-    w.document.close();
+    w.document.write(html); w.document.close();
     w.onload = () => { w.print(); };
   } else {
-    // Fallback iframe
     const iframe = document.createElement('iframe');
-    iframe.style.cssText='position:fixed;top:-9999px;left:-9999px;width:800px;height:900px;';
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:800px;height:1000px;';
     document.body.appendChild(iframe);
-    iframe.contentDocument.write(html);
-    iframe.contentDocument.close();
-    iframe.contentWindow.onload=()=>{iframe.contentWindow.print();setTimeout(()=>document.body.removeChild(iframe),1000);};
+    iframe.contentDocument.write(html); iframe.contentDocument.close();
+    iframe.contentWindow.onload = () => { iframe.contentWindow.print(); setTimeout(() => document.body.removeChild(iframe), 1000); };
   }
-  toast('🖨️ Bon de réparation envoyé à l\'impression !');
+  toast('🖨️ Fiche de réception envoyée à l\'impression');
 }
+
+/* ==================== NUMÉROTATION & FORMATS DES DOCUMENTS ==================== */
+// Une facture doit avoir un numéro unique, chronologique et sans trou : il est attribué une seule fois
+// à la première génération, puis conservé dans la réparation (jamais renuméroté, date d'émission figée).
+function nextSeq(kind) {
+  const y = new Date().getFullYear(), k = `pd3_seq_${kind}_${y}`;
+  let n = +localStorage.getItem(k) || 0;
+  const re = new RegExp(`-${y}-(\\d+)$`);                     // reprise après restauration d'une sauvegarde
+  repairs.forEach(r => { const m = ((kind==='inv' ? r.invNo : kind==='bon' ? r.bonNo : '') || '').match(re); if (m) n = Math.max(n, +m[1]); });
+  n += 1; localStorage.setItem(k, String(n));
+  return `${y}-${String(n).padStart(3, '0')}`;
+}
+function docNo(r, kind, prefix) {
+  const f = kind + 'No';
+  if (!r[f]) { r[f] = `${prefix}-${nextSeq(kind)}`; if (kind === 'inv') r.invDate = new Date().toISOString(); SR(); }
+  return r[f];
+}
+const pdfEUR = n => { const x = Math.round((+n || 0) * 100) / 100; return (Number.isInteger(x) ? String(x) : x.toFixed(2).replace('.', ',')) + ' €'; };
+const escH = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 /* ==================== INVOICE PDF (v4 — mentions légales conformes) ==================== */
 function genInvoice(id) {
@@ -1948,15 +1984,15 @@ function genInvoice(id) {
   doc.text('Doc',mL+24,30);
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(100,116,139);
   doc.text('RÉPARATION · TUTORIELS · RECONDITIONNÉS',mL,38);
-  doc.text('pixeldoc.fr',mL,44);
+  if (ph('pf_site')) doc.text(ph('pf_site'),mL,44);
 
   // Facture title
-  const num=`PD-${new Date().getFullYear()}-${String(id).slice(-4).toUpperCase()}`;
+  const num = docNo(r, 'inv', 'F');
   doc.setFont('helvetica','bold');doc.setFontSize(22);doc.setTextColor(255,255,255);
   doc.text('FACTURE',W-mR,30,{align:'right'});
   doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(100,116,139);
   doc.text(`N° ${num}`,W-mR,38,{align:'right'});
-  doc.text(`Date : ${new Date().toLocaleDateString('fr-FR')}`,W-mR,44,{align:'right'});
+  doc.text(`Date : ${new Date(r.invDate||Date.now()).toLocaleDateString('fr-FR')} · Prestation : ${new Date(r.date).toLocaleDateString('fr-FR')}`,W-mR,44,{align:'right'});
 
   let y=62;
 
@@ -2014,7 +2050,7 @@ function genInvoice(id) {
     doc.setFont('helvetica','normal'); doc.setFontSize(11); doc.setTextColor(226,232,240);
     doc.text('Réparation informatique', mL+5, y+3);
     doc.setFont('helvetica','bold'); doc.setTextColor(110,231,183);
-    doc.text(`${r.prix||'0'} €`, W-mR-5, y+3, {align:'right'});
+    doc.text(pdfEUR(r.prix), W-mR-5, y+3, {align:'right'});
     y+=16;
   } else {
     // Fonction utilitaire pour afficher une ligne de détail
@@ -2024,7 +2060,7 @@ function genInvoice(id) {
       doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.setTextColor(226,232,240);
       doc.text(String(label).substring(0, 62), mL+5, y+3);
       doc.setFont('helvetica','bold'); doc.setTextColor(...colRGB);
-      doc.text(`${Number(montant).toFixed(0)} €`, W-mR-5, y+3, {align:'right'});
+      doc.text(pdfEUR(montant), W-mR-5, y+3, {align:'right'});
       y+=13;
     };
     // Section main d'œuvre
@@ -2055,7 +2091,7 @@ function genInvoice(id) {
   if(r.acompte&&+r.acompte>0){
     doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(100,116,139);
     doc.text(`Acompte déjà versé`,mL+5,y);
-    doc.text(`- ${r.acompte} €`,W-mR-5,y,{align:'right'});
+    doc.text(`- ${pdfEUR(r.acompte)}`,W-mR-5,y,{align:'right'});
     y+=8;
   }
 
@@ -2066,9 +2102,9 @@ function genInvoice(id) {
   doc.setFillColor(110,231,183);
   doc.roundedRect(W-mR-62,y-5,62,20,3,3,'F');
   doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(15,17,23);
-  doc.text('TOTAL TTC',W-mR-58,y+3);
+  doc.text('TOTAL À PAYER',W-mR-58,y+3);
   doc.setFontSize(15);
-  doc.text(`${totalDue.toFixed(0)} €`,W-mR-5,y+11,{align:'right'});
+  doc.text(pdfEUR(totalDue),W-mR-5,y+11,{align:'right'});
   y+=28;
 
   // Statut paiement
@@ -2103,7 +2139,7 @@ function genInvoice(id) {
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(100,116,139);
   doc.text(`${ph('pf_nom','PixelDoc')} — Réparation informatique`+ (ph('pf_siret')?` · SIRET ${ph('pf_siret')}`:''),W/2,H-6,{align:'center'});
 
-  doc.save(`Facture-PixelDoc-${r.prenom}-${r.nom}-${num}.pdf`);
+  doc.save(`Facture-${num}-${String(r.nom||'client').replace(/\W+/g,'_')}.pdf`);
   toast('✅ Facture PDF générée !');
 }
 
@@ -2223,13 +2259,13 @@ const fmtPct = n => (Number(n)||0).toLocaleString('fr-FR',{maximumFractionDigits
 function getProfil(){return JSON.parse(localStorage.getItem('pd3_profil')||'{}');}
 function loadProfil(){
   const p=getProfil();
-  ['pf_nom','pf_stat','pf_adr','pf_tel','pf_mail','pf_siren','pf_siret','pf_rne','pf_rm','pf_med'].forEach(k=>{
+  ['pf_nom','pf_stat','pf_adr','pf_tel','pf_mail','pf_siren','pf_siret','pf_rne','pf_rm','pf_med','pf_site'].forEach(k=>{
     const el=document.getElementById(k); if(el && p[k]!==undefined) el.value=p[k];
   });
 }
 function saveProfil(){
   const p={};
-  ['pf_nom','pf_stat','pf_adr','pf_tel','pf_mail','pf_siren','pf_siret','pf_rne','pf_rm','pf_med'].forEach(k=>{
+  ['pf_nom','pf_stat','pf_adr','pf_tel','pf_mail','pf_siren','pf_siret','pf_rne','pf_rm','pf_med','pf_site'].forEach(k=>{
     const el=document.getElementById(k); if(el) p[k]=el.value;
   });
   localStorage.setItem('pd3_profil',JSON.stringify(p));
@@ -2520,7 +2556,8 @@ function genQuotePDF(){
   doc.setFillColor(15,17,23); doc.setTextColor(255);
   doc.rect(14,y,182,10,'F');
   doc.setFillColor(110,231,183); doc.rect(14,y+10,182,1,'F');
-  const num=document.getElementById('dv_num').value || ('DV-'+new Date().getFullYear()+'-001');
+  let num=document.getElementById('dv_num').value;
+  if(!num){ num='DV-'+nextSeq('devis'); document.getElementById('dv_num').value=num; }
   doc.text(`DEVIS ${num}`,18,y+7);
   doc.setTextColor(0); y+=15;
   const date=document.getElementById('dv_date').value || new Date().toISOString().slice(0,10);
