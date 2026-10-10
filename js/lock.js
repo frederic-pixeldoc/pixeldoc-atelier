@@ -6,10 +6,13 @@ function boot() {
 }
 
 /* ==================== LOCK ==================== */
+function pinIsSet() { return !!(localStorage.getItem('pd3_pin_h') || localStorage.getItem('pd3_pin')); }
 function showLock() {
   document.getElementById('lockScreen').classList.remove('hidden');
-  pinBuf = ''; pinMode = 'login';
-  setLockUI('Accès sécurisé','Entrez votre code PIN à 4 chiffres','🔐');
+  pinBuf = ''; newPin = '';
+  // Aucun code par défaut (il serait lisible dans le dépôt public) : au premier lancement, on crée son code.
+  if (!pinIsSet()) { pinMode = 'setup_new'; setLockUI('Créez votre code PIN','Choisissez un code à 4 chiffres pour verrouiller l\'atelier','🔑'); }
+  else { pinMode = 'login'; setLockUI('Accès sécurisé','Entrez votre code PIN à 4 chiffres','🔐'); }
   document.getElementById('pinErr').textContent = '';
   renderDots();
 }
@@ -66,8 +69,7 @@ async function pinCheck(pin) {
     if (ok && hasCrypto) await pinStore(pin);                    // ancien PIN en clair : remplacé par son empreinte
     return ok;
   }
-  if (hasCrypto) { const [, it, salt, want] = DEF_PIN_H.split(':'); return (await pinDerive(pin, salt, +it)) === want; }
-  return pin === atob('MTEwOA==');                                // contexte non sécurisé (sans crypto) : repli
+  return false;                                                    // aucun code défini : on n'arrive ici qu'en mode création (voir showLock)
 }
 function pinIsDefault() { return false; }   // le code par défaut n'est plus public : plus de bannière d'alerte
 function pinWaitSeconds() {

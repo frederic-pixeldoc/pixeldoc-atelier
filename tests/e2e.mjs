@@ -1,12 +1,10 @@
 // Test bout-en-bout dans un vrai navigateur : TVA, factures, sauvegarde/restauration, rappel.
-// Usage : PD_PIN=xxxx node tests/e2e.mjs http://localhost:8080/
-import { createRequire } from 'module';
+// Usage : [PD_PIN=xxxx] node tests/e2e.mjs http://localhost:8080/
 import fs from 'fs';
-const require = createRequire(import.meta.url);
-let pw; try { pw = require('playwright'); } catch { pw = require(require('child_process').execSync('npm root -g').toString().trim() + '/playwright'); }
+import { playwright, unlock } from './helpers.mjs';
+const pw = playwright(); const { chromium } = pw;
 const url = process.argv[2] || 'http://localhost:8080/';
-const pin = process.env.PD_PIN; if (!pin) { console.error('PD_PIN requis'); process.exit(2); }
-const b = await pw.chromium.launch({ executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium', args: ['--no-sandbox'] });
+const b = await chromium.launch({ executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium', args: ['--no-sandbox'] });
 const ctx = await b.newContext({ acceptDownloads: true });
 const p = await ctx.newPage();
 const errs = [], dialogs = [];
@@ -17,8 +15,13 @@ let fail = 0;
 const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) fail++; };
 
 await p.goto(url);
-for (const d of pin) await p.click(`.key:text-is("${d}")`);
-await p.waitForFunction(() => document.getElementById('lockScreen').classList.contains('hidden'));
+ok(/Créez/.test(await p.textContent('#lockHeading')), 'premier lancement : création du code PIN demandée (pas de code par défaut)');
+await unlock(p);
+await p.evaluate(() => lockApp());
+for (const d of '1108') await p.click(`.key:text-is("${d}")`);
+await p.waitForTimeout(1500);
+ok(await p.evaluate(() => !document.getElementById('lockScreen').classList.contains('hidden')), 'ancien code par défaut 1108 refusé');
+await unlock(p);
 await p.waitForFunction(() => window.jspdf && window.Chart, null, { timeout: 15000 });
 
 // 1. Régime de TVA non choisi : pas de facture, pas de numéro consommé

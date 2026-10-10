@@ -21,8 +21,6 @@ let curSearch = '';
 let chart   = null;
 
 /* PIN */
-// Code par défaut : seule son empreinte (PBKDF2) est dans le code, jamais le code lui-même.
-const DEF_PIN_H = 'v1:150000:8468a4707856bfd931c791f7a0da2fed:76e01fb6dbe05c1f23719f713f92cf067db721eef60d8654ccaaba6bd7572038';
 let pinBuf = '';
 let pinMode = 'login'; // login | setup_new | setup_confirm
 let newPin  = '';
