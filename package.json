@@ -1,0 +1,8 @@
+{
+  "name": "pixeldoc-atelier",
+  "private": true,
+  "description": "Outils de test uniquement : l'appli elle-même n'a aucune dépendance ni étape de build.",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  }
+}

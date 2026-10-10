@@ -20,3 +20,6 @@ document.addEventListener('DOMContentLoaded',()=>a11yEnhance());
 
 // Les scripts différés (Chart.js, jsPDF) sont chargés avant DOMContentLoaded
 document.addEventListener('DOMContentLoaded', boot);
+
+// Demande au navigateur de ne pas effacer les données de l'appli quand l'espace disque manque.
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});

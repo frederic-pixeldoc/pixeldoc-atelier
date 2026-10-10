@@ -4,22 +4,22 @@ function renderPayments() {
   const done = repairs.filter(r=>r.status==='done');
   const paid   = done.filter(r=>r.payment==='paid');
   const unpaid = done.filter(r=>r.payment!=='paid');
-  const tPaid   = paid.reduce((a,r)=>a+(+r.prix||0),0);
-  const tUnpaid = unpaid.reduce((a,r)=>a+(+r.prix||0),0);
+  const tPaid   = PDCalc.sumEUR(paid.map(r=>r.prix));
+  const tUnpaid = PDCalc.sumEUR(unpaid.map(r=>r.prix));
 
   document.getElementById('payStats').innerHTML=`
     <div class="stat c1"><div class="stat-ico">✅</div><div class="stat-val">${tPaid.toFixed(0)}€</div><div class="stat-lbl">Encaissé</div></div>
     <div class="stat c4"><div class="stat-ico">⏳</div><div class="stat-val">${tUnpaid.toFixed(0)}€</div><div class="stat-lbl">À encaisser</div></div>
     <div class="stat c2"><div class="stat-ico">📋</div><div class="stat-val">${unpaid.length}</div><div class="stat-lbl">Factures en attente</div></div>
-    <div class="stat c3"><div class="stat-ico">💶</div><div class="stat-val">${(tPaid+tUnpaid).toFixed(0)}€</div><div class="stat-lbl">Total facturable</div></div>
+    <div class="stat c3"><div class="stat-ico">💶</div><div class="stat-val">${PDCalc.fromCents(PDCalc.toCents(tPaid)+PDCalc.toCents(tUnpaid)).toFixed(0)}€</div><div class="stat-lbl">Total facturable</div></div>
   `;
 
   const rowHtml = r => {
     const py = r.payment||'pending';
     return `<div class="pay-row">
       <div class="pay-info">
-        <div class="pay-name">${r.prenom} ${r.nom}</div>
-        <div class="pay-dev">${r.appareil||'—'} · ${new Date(r.date).toLocaleDateString('fr-FR')}</div>
+        <div class="pay-name">${escH(r.prenom)} ${escH(r.nom)}</div>
+        <div class="pay-dev">${escH(r.appareil||'—')} · ${new Date(r.date).toLocaleDateString('fr-FR')}</div>
       </div>
       <div class="pay-amt">${r.prix?r.prix+'€':'—'}</div>
       <div class="pay-acts">
@@ -50,7 +50,7 @@ function markPaid(id) {
 /* ==================== STOCK PAGE ==================== */
 function renderStock() {
   const low  = stock.filter(s=>s.qty<=s.min).length;
-  const val  = stock.reduce((a,s)=>a+(s.qty*(+s.pa||0)),0);
+  const val  = PDCalc.fromCents(stock.reduce((a,s)=>a+PDCalc.lineTotal(s.qty,PDCalc.toCents(s.pa)),0));
   const tot  = stock.reduce((a,s)=>a+s.qty,0);
 
   document.getElementById('stockStats').innerHTML=`
@@ -75,8 +75,8 @@ function renderStock() {
     <div class="scard">
       <div class="scard-top">
         <div>
-          <div class="scard-name">${CE[s.cat]||'📦'} ${s.nom}</div>
-          <div class="scard-cat">${s.cat}</div>
+          <div class="scard-name">${CE[s.cat]||'📦'} ${escH(s.nom)}</div>
+          <div class="scard-cat">${escH(s.cat)}</div>
         </div>
         <div class="scard-acts">
           <button class="qbtn" onclick="openStockEdit('${s.id}')" title="Modifier" aria-label="Modifier">✏️</button>
@@ -92,7 +92,7 @@ function renderStock() {
         <button class="qbtn" aria-label="Ajouter une unité" onclick="adjQty('${s.id}',+1)">+</button>
       </div>
       ${s.pa||s.pv?`<div class="scard-prices">Achat: ${s.pa||0}€ · Vente: ${s.pv||0}€</div>`:''}
-      ${s.ref?`<div class="scard-ref">Réf: ${s.ref}</div>`:''}
+      ${s.ref?`<div class="scard-ref">Réf: ${escH(s.ref)}</div>`:''}
     </div>`;
   }).join('');
   updateBadges();

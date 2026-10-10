@@ -17,7 +17,7 @@ function exportTarifsPDF(){
   doc.setFontSize(16); doc.setFont(undefined,'bold');
   doc.text(p.pf_nom||'PixelDoc',14,y); y+=7;
   doc.setFontSize(10); doc.setFont(undefined,'normal');
-  doc.text('Grille tarifaire HT — TVA non applicable, art. 293 B du CGI',14,y); y+=10;
+  doc.text('Grille tarifaire — '+(vatPhrase(p)||'régime de TVA à renseigner dans Profil'),14,y); y+=10;
   const sect=(title,rows)=>{
     doc.setFontSize(12); doc.setFont(undefined,'bold');
     doc.setFillColor(15,42,74); doc.setTextColor(255);

@@ -4,7 +4,7 @@ const LEGAL_TEXTS = {
   mentions: { title:'Mentions légales', html:`
     <h2>Mentions légales</h2>
     <h3>1. Éditeur</h3>
-    <p><strong>{NOM}</strong> — {STAT}<br>{ADR}<br>Tél : {TEL} · {MAIL}<br>SIREN {SIREN} · SIRET {SIRET}<br>RNE {RNE} · RM {RM}<br>TVA non applicable, art. 293 B du CGI.</p>
+    <p><strong>{NOM}</strong> — {STAT}<br>{ADR}<br>Tél : {TEL} · {MAIL}<br>SIREN {SIREN} · SIRET {SIRET}<br>RNE {RNE} · RM {RM}<br>{TVA}.</p>
     <h3>2. Hébergement</h3>
     <p>Site hébergé par Netlify, Inc. — 512 2nd Street, Suite 200, San Francisco, CA 94107, USA.</p>
     <h3>3. Activités</h3>
@@ -19,7 +19,7 @@ const LEGAL_TEXTS = {
     <p><em>Document complet disponible (.docx fourni par PixelDoc), accepté par le client lors du devis.</em></p>
     <p><strong>Articles principaux :</strong></p>
     <ol><li>Objet et champ d'application</li><li>Devis et commande (validité 30 j, acompte 30 % > 100 €)</li>
-    <li>Prix HT, TVA non applicable art. 293 B</li><li>Modalités de paiement</li>
+    <li>Prix et TVA : {TVA}</li><li>Modalités de paiement</li>
     <li>Délais et exécution</li><li>Réception et restitution du matériel</li>
     <li><strong>Sauvegarde des données — responsabilité limitée</strong></li>
     <li>Droit de rétractation (vente à distance, 14 j)</li>
@@ -50,7 +50,7 @@ const LEGAL_TEXTS = {
     <p style="font-size:12px;color:#666"><em>À imprimer en A4 et à afficher visiblement à l'accueil.</em></p>
     <h2 style="text-align:center">{NOM}</h2>
     <p style="text-align:center">{STAT}<br>{ADR}<br>{TEL} · {MAIL}<br>SIREN {SIREN} · SIRET {SIRET}</p>
-    <h3>Tarifs principaux (HT — TVA non applicable, art. 293 B CGI)</h3>
+    <h3>Tarifs principaux ({TVA})</h3>
     <ul><li>Diagnostic atelier : <strong>35 €</strong> (offert si réparation acceptée)</li>
     <li>Diagnostic + rapport écrit : <strong>45 €</strong></li>
     <li>Taux horaire atelier : <strong>45 €/h</strong></li>
@@ -63,14 +63,15 @@ const LEGAL_TEXTS = {
 };
 function injectProfil(html){
   const p=getProfil();
-  const sub=(k,d)=> (p[k]||d||'<span class="ph-warn">⚠ à compléter</span>');
+  const sub=(k,d)=> (p[k]||d) ? escH(p[k]||d) : '<span class="ph-warn">⚠ à compléter</span>';
   return html
     .replaceAll('{NOM}',sub('pf_nom'))
     .replaceAll('{STAT}',sub('pf_stat','Entrepreneur individuel — micro-entreprise'))
     .replaceAll('{ADR}',sub('pf_adr')).replaceAll('{TEL}',sub('pf_tel'))
     .replaceAll('{MAIL}',sub('pf_mail')).replaceAll('{SIREN}',sub('pf_siren'))
     .replaceAll('{SIRET}',sub('pf_siret')).replaceAll('{RNE}',sub('pf_rne'))
-    .replaceAll('{RM}',sub('pf_rm','—')).replaceAll('{MED}',sub('pf_med'));
+    .replaceAll('{RM}',sub('pf_rm','—')).replaceAll('{MED}',sub('pf_med'))
+    .replaceAll('{TVA}',escH(vatPhrase(p)||'')||'<span class="ph-warn">⚠ régime de TVA à choisir dans Profil</span>');
 }
 function openLegal(key){
   const t=LEGAL_TEXTS[key]; if(!t) return;

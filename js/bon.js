@@ -71,7 +71,7 @@ function printBon(id) {
       <div class="box"><div class="lb">Signature du client — « lu et approuvé »</div></div>
       <div class="box"><div class="lb">Pour PixelDoc</div><div class="small">${pv('pf_nom') || 'Frédéric Bartholo'}<br>Le ${dateStr}</div></div>
     </div>
-    <div class="fine"><strong>Conditions.</strong> Micro-entreprise, TVA non applicable, art. 293 B du CGI. Garantie main d'œuvre 3 mois sur la panne traitée ; garanties légales inchangées. L'atelier informera le client de la fin des travaux : l'appareil est à retirer sans délai. À défaut de retrait après mise en demeure, l'atelier pourra appliquer les dispositions légales relatives aux objets abandonnés.
+    <div class="fine"><strong>Conditions.</strong> ${escH(vatPhrase(P) || 'Régime de TVA à renseigner dans le Profil')}. Garantie main d'œuvre 3 mois sur la panne traitée ; garanties légales inchangées. L'atelier informera le client de la fin des travaux : l'appareil est à retirer sans délai. À défaut de retrait après mise en demeure, l'atelier pourra appliquer les dispositions légales relatives aux objets abandonnés.
       <br><strong>Données personnelles.</strong> Les informations de cette fiche servent uniquement à la réparation, à la facturation et au suivi de garantie ; elles sont conservées 3 ans après la dernière intervention (10 ans pour les pièces comptables). Droit d'accès, de rectification et d'effacement : ${pv('pf_mail') || 'voir mentions légales'}.</div>
   </body></html>`;
 

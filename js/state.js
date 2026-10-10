@@ -1,7 +1,18 @@
 'use strict';
 /* ==================== DATA ==================== */
-let repairs = JSON.parse(localStorage.getItem('pd3_repairs') || '[]');
-let stock   = JSON.parse(localStorage.getItem('pd3_stock')   || '[]');
+// Migration des données du navigateur vers le schéma courant (additive, annulée si une écriture échoue).
+try { PDBackup.migrateStore({ get: k => localStorage.getItem(k), set: (k, v) => localStorage.setItem(k, v) }); } catch(e) {}
+// Lecture sûre : un contenu illisible n'est jamais écrasé, il est mis de côté sous une autre clé.
+function loadList(key) {
+  const raw = localStorage.getItem(key);
+  if (raw === null) return [];
+  try { const v = JSON.parse(raw); if (Array.isArray(v)) return v; } catch(e) {}
+  try { localStorage.setItem(key + '_illisible_' + Date.now(), raw); } catch(e) {}
+  setTimeout(() => alert('⚠ Les données « ' + key + ' » sont illisibles. Une copie brute a été conservée dans le navigateur ; restaurez une sauvegarde.'), 500);
+  return [];
+}
+let repairs = loadList('pd3_repairs');
+let stock   = loadList('pd3_stock');
 let photos  = [];
 let editId  = null;
 let editSId = null;

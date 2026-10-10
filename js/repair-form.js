@@ -25,13 +25,13 @@ function renderAddTasks(){
   } else {
     cont.innerHTML = _addTasks.map((t,i)=>`
       <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;margin-bottom:4px;font-size:12px;gap:8px">
-        <span style="flex:1;color:var(--text)">${t.lib}</span>
+        <span style="flex:1;color:var(--text)">${escH(t.lib)}</span>
         <strong style="color:var(--accent);font-family:var(--display);white-space:nowrap">${t.pr.toFixed(2)} €</strong>
         <button type="button" onclick="rmAddTask(${i})" style="background:none;border:none;color:var(--accent3);cursor:pointer;font-size:16px;padding:0 4px">×</button>
       </div>`).join('') +
       `<div style="display:flex;justify-content:space-between;padding:7px 10px;background:rgba(110,231,183,0.1);border:1px solid var(--accent);border-radius:6px;margin-top:6px;font-size:13px;font-weight:700">
         <span>Total prestations</span>
-        <span style="color:var(--accent);font-family:var(--display)">${_addTasks.reduce((s,t)=>s+t.pr,0).toFixed(2)} €</span>
+        <span style="color:var(--accent);font-family:var(--display)">${PDCalc.sumEUR(_addTasks.map(t=>t.pr)).toFixed(2)} €</span>
       </div>`;
   }
   // Auto-remplit le champ Prix avec le total combiné
@@ -62,7 +62,7 @@ function buildPartsSelect(){
     stock.forEach(s => {
       const ico = (typeof CE !== 'undefined' && CE[s.cat]) ? CE[s.cat] : '📦';
       const dispo = (s.qty > 0) ? '' : ' — RUPTURE';
-      opts += `<option value="${s.id}">${ico} ${s.nom} — ${(parseFloat(s.pv)||0).toFixed(2)} €${dispo}</option>`;
+      opts += `<option value="${s.id}">${ico} ${escH(s.nom)} — ${(parseFloat(s.pv)||0).toFixed(2)} €${dispo}</option>`;
     });
     opts += '</optgroup>';
   }
@@ -108,13 +108,13 @@ function renderAddParts(){
   } else {
     cont.innerHTML = _addParts.map((p,i)=>`
       <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;margin-bottom:4px;font-size:12px;gap:8px">
-        <span style="flex:1;color:var(--text)">📦 ${p.nom}${p.ref==='libre'?' <em style="color:var(--dim);font-size:10px">(libre)</em>':''}</span>
+        <span style="flex:1;color:var(--text)">📦 ${escH(p.nom)}${p.ref==='libre'?' <em style="color:var(--dim);font-size:10px">(libre)</em>':''}</span>
         <strong style="color:var(--accent4);font-family:var(--display);white-space:nowrap">${p.pr.toFixed(2)} €</strong>
         <button type="button" onclick="rmAddPart(${i})" style="background:none;border:none;color:var(--accent3);cursor:pointer;font-size:16px;padding:0 4px">×</button>
       </div>`).join('') +
       `<div style="display:flex;justify-content:space-between;padding:7px 10px;background:rgba(96,165,250,0.1);border:1px solid var(--accent4);border-radius:6px;margin-top:6px;font-size:13px;font-weight:700">
         <span>Total pièces</span>
-        <span style="color:var(--accent4);font-family:var(--display)">${_addParts.reduce((s,p)=>s+p.pr,0).toFixed(2)} €</span>
+        <span style="color:var(--accent4);font-family:var(--display)">${PDCalc.sumEUR(_addParts.map(p=>p.pr)).toFixed(2)} €</span>
       </div>`;
   }
 }
@@ -132,9 +132,7 @@ function resetAddParts(){
 
 /* Recalcul du total combiné (Prestations + Pièces) → champ Prix */
 function recalcAddTotal(){
-  const totT = _addTasks.reduce((s,t)=>s+t.pr, 0);
-  const totP = _addParts.reduce((s,p)=>s+p.pr, 0);
-  const total = totT + totP;
+  const total = PDCalc.sumEUR([..._addTasks.map(t=>t.pr), ..._addParts.map(p=>p.pr)]);
   const pi = document.getElementById('fPrix');
   if (pi && total > 0) pi.value = total.toFixed(2);
 }

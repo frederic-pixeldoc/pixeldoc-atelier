@@ -85,6 +85,9 @@ function chgStatus(id, s) {
   }
 }
 function delRepair(id) {
+  const x = repairs.find(r=>r.id===id);
+  // Une facture émise ne peut pas disparaître : la numérotation doit rester continue, sans trou.
+  if (x && x.invNo) { alert(`Cette réparation porte la facture ${x.invNo} : elle ne peut pas être supprimée (numérotation continue obligatoire, conservation 10 ans).`); return; }
   if(!confirm('Supprimer cette réparation ?'))return;
   repairs=repairs.filter(r=>r.id!==id);
   SR();refreshAll();toast('🗑️ Réparation supprimée');
@@ -114,9 +117,9 @@ function openDet(id) {
     </div>
     <div class="det-sec">
       <div class="det-sec-title">Informations client</div>
-      <div class="det-row"><span class="lbl">Appareil</span><span class="val">${r.appareil||'—'}</span></div>
-      <div class="det-row"><span class="lbl">Téléphone</span><span class="val">${r.tel||'—'}</span></div>
-      <div class="det-row"><span class="lbl">Email</span><span class="val">${r.email||'—'}</span></div>
+      <div class="det-row"><span class="lbl">Appareil</span><span class="val">${escH(r.appareil||'—')}</span></div>
+      <div class="det-row"><span class="lbl">Téléphone</span><span class="val">${escH(r.tel||'—')}</span></div>
+      <div class="det-row"><span class="lbl">Email</span><span class="val">${escH(r.email||'—')}</span></div>
       <div class="det-row"><span class="lbl">Date entrée</span><span class="val">${new Date(r.date).toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</span></div>
       <div class="det-row"><span class="lbl">Statut</span><span class="val"><span class="sbadge ${SC[r.status]}">${SE[r.status]} ${SL[r.status]}</span></span></div>
       <div class="det-row"><span class="lbl">Prix</span><span class="val" style="color:var(--accent);font-family:var(--display);font-size:18px">${r.prix?r.prix+' €':'—'}</span></div>
@@ -131,9 +134,9 @@ function openDet(id) {
     </div>
     <div class="det-sec">
       <div class="det-sec-title">Problème décrit</div>
-      <p style="font-size:13px;color:var(--dim);line-height:1.6;background:var(--surface2);padding:10px 12px;border-radius:8px">${r.probleme||'Aucune description'}</p>
+      <p style="font-size:13px;color:var(--dim);line-height:1.6;background:var(--surface2);padding:10px 12px;border-radius:8px">${escH(r.probleme||'Aucune description')}</p>
     </div>
-    ${r.notes?`<div class="det-sec"><div class="det-sec-title">Notes internes 🔒</div><p style="font-size:13px;color:var(--accent2);line-height:1.6;background:rgba(245,158,11,0.08);padding:10px 12px;border-radius:8px;border:1px solid rgba(245,158,11,0.15)">${r.notes}</p></div>`:''}
+    ${r.notes?`<div class="det-sec"><div class="det-sec-title">Notes internes 🔒</div><p style="font-size:13px;color:var(--accent2);line-height:1.6;background:rgba(245,158,11,0.08);padding:10px 12px;border-radius:8px;border:1px solid rgba(245,158,11,0.15)">${escH(r.notes)}</p></div>`:''}
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
       <button class="btn btn-ghost" style="flex:1" onclick="openEdit('${r.id}');closeM('detModal')">✏️ Modifier</button>
       <button class="btn btn-purple" onclick="printBon('${r.id}')">🖨️ Fiche de réception</button>

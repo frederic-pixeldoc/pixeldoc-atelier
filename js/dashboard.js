@@ -17,7 +17,7 @@ function renderDashStats() {
   const prog = repairs.filter(r => r.status === 'progress').length;
   const wait = repairs.filter(r => r.status === 'waiting').length;
   const done = repairs.filter(r => r.status === 'done').length;
-  const enc  = repairs.filter(r => r.status === 'done' && r.payment === 'paid').reduce((a,r) => a+(+r.prix||0), 0);
+  const enc  = repairs.filter(r => r.status === 'done' && r.payment === 'paid').map(r => r.prix).reduce((a,v) => a+PDCalc.toCents(v), 0) / 100;
   document.getElementById('dashStats').innerHTML = `
     <div class="stat c1"><div class="stat-ico">🔧</div><div class="stat-val">${prog+wait}</div><div class="stat-lbl">En cours</div></div>
     <div class="stat c2"><div class="stat-ico">⏳</div><div class="stat-val">${wait}</div><div class="stat-lbl">En attente</div></div>
@@ -34,10 +34,10 @@ function renderChart() {
   for (let i=29;i>=0;i--) {
     const d = new Date(now); d.setDate(d.getDate()-i);
     labels.push(d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}));
-    const v = repairs.filter(r=>r.payment==='paid'&&r.prix&&new Date(r.date).toDateString()===d.toDateString()).reduce((a,r)=>a+(+r.prix||0),0);
+    const v = repairs.filter(r=>r.payment==='paid'&&r.prix&&new Date(r.date).toDateString()===d.toDateString()).map(r=>r.prix).reduce((a,v)=>a+PDCalc.toCents(v),0)/100;
     daily.push(v); run+=v; cumul.push(run);
   }
-  const total = repairs.filter(r=>r.payment==='paid').reduce((a,r)=>a+(+r.prix||0),0);
+  const total = PDCalc.sumEUR(repairs.filter(r=>r.payment==='paid').map(r=>r.prix));
   document.getElementById('chartTotal').textContent = `Encaissé : ${total.toFixed(0)} €`;
   const ctx = document.getElementById('revChart').getContext('2d');
   if (chart) chart.destroy();
@@ -111,15 +111,15 @@ function renderGrid(id, list) {
         <div class="rcard-device">
           <div class="thumb">${r.photos&&r.photos[0]?`<img src="${r.photos[0]}" alt="Photo de l'appareil" loading="lazy">`:' 💻'}</div>
           <div>
-            <div class="dev-name">${r.appareil||'Appareil inconnu'}</div>
-            <div class="dev-client">${r.prenom} ${r.nom}</div>
+            <div class="dev-name">${escH(r.appareil||'Appareil inconnu')}</div>
+            <div class="dev-client">${escH(r.prenom)} ${escH(r.nom)}</div>
           </div>
         </div>
         <span class="sbadge ${SC[r.status]}">${SE[r.status]} ${SL[r.status]}</span>
       </div>
       <div class="rcard-body">
         ${photoHtml}
-        <div class="rcard-prob">${(r.probleme||'Aucune description').substring(0,85)}${(r.probleme||'').length>85?'…':''}</div>
+        <div class="rcard-prob">${escH((r.probleme||'Aucune description').substring(0,85))}${(r.probleme||'').length>85?'…':''}</div>
         ${restBadge(r) ? `<div class="rcard-rest">${restBadge(r)}</div>` : ''}
         <div class="rcard-meta">
           <span class="meta-item">📅 ${new Date(r.date).toLocaleDateString('fr-FR')}</span>
